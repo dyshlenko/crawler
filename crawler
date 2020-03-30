@@ -1,0 +1,57 @@
+#!/usr/bin/env php
+<?php
+if (!file_exists(__DIR__ . '/vendor/autoload.php')) {
+    echo "\nThe crawler utility not installed. Use \"composer install\" or \"composer update\" for install.\n\n";
+    exit(1);
+}
+
+error_reporting(E_ERROR);
+
+include __DIR__ . '/vendor/autoload.php';
+
+use App\Console\ArgumentHolder;
+use App\ContentLoader;
+use App\ImgCountHandler;
+use Domain\Site;
+
+const
+DEFAULT_TIMEOUT = 60,
+DEFAULT_LEVEL   = PHP_INT_MAX,
+SITE_INDEX      = 0;
+
+$consoleArguments = new ArgumentHolder();
+
+$url = $consoleArguments->getParameter(SITE_INDEX);
+
+$paramsError =
+    (filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_SCHEME_REQUIRED | FILTER_FLAG_HOST_REQUIRED) === false) ||
+    (($parsed = parse_url($url)) === false);
+$paramsError |= (!in_array($parsed['scheme'] ?? [], ['http', 'https'], true));
+if ($paramsError) {
+    echo "\nIncorrect URL ", $url, "\n\nUse the utility as follows.\n\n";
+}
+
+if ($paramsError || $url === null || $consoleArguments->getOption('h') !== null) {
+    if ($text = file_get_contents('help.txt')) {
+        echo $text;
+    } else {
+        echo "File \"help.txt\" not found.\n";
+    }
+    exit(1);
+}
+$start = microtime(true);
+set_time_limit($consoleArguments->getOption('t') ?? DEFAULT_TIMEOUT);
+
+$loader  = ContentLoader::getInstance();
+$site    = new Site($url);
+$handler = new ImgCountHandler($site, $url, $loader, [], $consoleArguments->getOption('l') ?? DEFAULT_LEVEL);
+
+$report       = $handler->handle($url);
+$fullFilename = ($consoleArguments->getOption('d') ?? '.') . '/' . $report->getDefaultFilename();
+
+if (file_put_contents($fullFilename, $report->getContent()) === false) {
+    echo "\n\nFile ", $fullFilename, " cann't be saved.";
+    exit(1);
+}
+
+echo "\nFile ", $fullFilename, " saved.\n", sprintf("Full runtime = %.3f sec.\n", microtime(true) - $start);
