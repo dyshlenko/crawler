@@ -12,6 +12,13 @@ interface ContentLoaderInterface
     public function setHeaders(array $headers): void ;
 
     /**
+     * Set headers for all CURL requests.
+     *
+     * @param string|null $data
+     */
+    public function setData($data): void ;
+
+    /**
      * Get content for all URLs in $urlArray.
      *
      * @param array $urlArray

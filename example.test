@@ -1,0 +1,13 @@
+./payload -H"Content-Type application/x-www-form-urlencoded" -H"Accept-Encoding gzip, deflate" -mPOST -i100 -c1 https://api.testizy.me/GraphQL -D'query=query($criterion: ServiceTranslationListCriterionInterface) {
+    allServiceTranslations(criterion: $criterion) {
+        namespace,
+        item,
+        group,
+        texts {
+            locale,
+            text
+        }
+    }
+}&variables={
+  "criterion": {}
+}'

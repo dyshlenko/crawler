@@ -2,6 +2,8 @@
 
 namespace App;
 
+use InvalidArgumentException;
+
 class ContentLoader implements ContentLoaderInterface
 {
     static private $instance;
@@ -21,6 +23,10 @@ class ContentLoader implements ContentLoaderInterface
     }
 
     private $headers = [];
+
+    private $method = 'GET';
+
+    private $data;
 
     /**
      * Set headers for all CURL requests.
@@ -46,6 +52,10 @@ class ContentLoader implements ContentLoaderInterface
         foreach ($urlArray as $url) {
             $curlHandlers[$url] = $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            if (in_array($this->method, ['POST', 'PUT'], true)) {
+                curl_setopt($ch, CURLOPT_POST, 1);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, (string) $this->data);
+            }
             foreach ($this->headers as $header) {
                 curl_setopt($ch, CURLOPT_HEADER, $header);
             }
@@ -70,5 +80,50 @@ class ContentLoader implements ContentLoaderInterface
         }
 
         return $curlHandlers;
+    }
+
+    /**
+     * @return string
+     */
+    public function getMethod(): string
+    {
+        return $this->method;
+    }
+
+    /**
+     * @param string $method
+     *
+     * @return ContentLoader
+     */
+    public function setMethod(string $method): ContentLoader
+    {
+        $method = strtoupper($method);
+        if (in_array($method, ['GET', 'POST', 'PUT', 'DELETE'])) {
+            $this->method = $method;
+            return $this;
+        }
+
+        throw new InvalidArgumentException('Invalid method ' . var_export($method, true));
+    }
+
+    public function setData($data): void
+    {
+        $this->data = $data;
+    }
+
+    /**
+     * @return array
+     */
+    public function getHeaders(): array
+    {
+        return $this->headers;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getData()
+    {
+        return $this->data;
     }
 }

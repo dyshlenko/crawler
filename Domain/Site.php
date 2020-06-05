@@ -12,6 +12,12 @@ use InvalidArgumentException;
  */
 class Site
 {
+    /** @var string $originalUrl */
+    private $originalUrl;
+
+    /** @var string $data */
+    private $data;
+
     /** @var string $scheme */
     private $scheme;
 
@@ -34,12 +40,13 @@ class Site
      */
     public function __construct(string $url)
     {
-        $parsed         = parse_url($url);
-        $this->scheme   = $parsed['scheme'] ?? null;
-        $this->host     = $parsed['host'] ?? null;
-        $this->port     = $parsed['port'] ?? null;
-        $this->username = $parsed['user'] ?? null;
-        $this->password = $parsed['pass'] ?? null;
+        $this->originalUrl = $url;
+        $parsed            = parse_url($url);
+        $this->scheme      = $parsed['scheme'] ?? null;
+        $this->host        = $parsed['host'] ?? null;
+        $this->port        = $parsed['port'] ?? null;
+        $this->username    = $parsed['user'] ?? null;
+        $this->password    = $parsed['pass'] ?? null;
 
         if (!($this->scheme && $this->host)) {
             throw new InvalidArgumentException('For the root URL, the schema and host must be defined.');
@@ -79,13 +86,12 @@ class Site
     {
         $parsed = parse_url($url);
 
-        return
-            /** The scheme is not specified or corresponds to http or https. */
-            ((!isset($parsed['scheme'])) ||
-             (($parsed['scheme'] ?? false) &&
-              ((strtolower($parsed['scheme']) === 'http') || (strtolower($parsed['scheme']) === 'https')))) &&
+        return // The scheme is not specified or corresponds to http or https.
+            ((!isset($parsed['scheme'])) || (($parsed['scheme'] ?? false) &&
+                                             ((strtolower($parsed['scheme']) === 'http') ||
+                                              (strtolower($parsed['scheme']) === 'https')))) &&
 
-            /** Host is not specified or matches the host of the root page. */
+            // Host is not specified or matches the host of the root page.
             ((!isset($parsed['host'])) || ($parsed['host'] === $this->host));
     }
 
@@ -98,22 +104,48 @@ class Site
 
         $url = ($parsed['scheme'] ?? $this->scheme) . '://';
 
-        if ((($parsed['user'] ?? false) && ($parsed['pass'] ?? false)) ||
+        if (
+            (($parsed['user'] ?? false) && ($parsed['pass'] ?? false)) ||
             (!($parsed['host'] ?? false) && $this->username && $this->password)) {
-            $url .= ($parsed['user'] ?? $this->username) . ':' .
-                    ($parsed['pass'] ?? $this->password) . '@';
+            $url .= ($parsed['user'] ?? $this->username) . ':' . ($parsed['pass'] ?? $this->password) . '@';
         }
 
         $url .= ($parsed['host'] ?? $this->host);
 
-        if (($parsed['port'] ?? false) ||
-            (!($parsed['host'] ?? false) && $this->port)) {
+        if (
+            ($parsed['port'] ?? false) || (!($parsed['host'] ?? false) && $this->port)) {
             $url .= ':' . ($parsed['port'] ?? $this->port);
         }
 
-        $url .= ($parsed['path'] ?? '/') .
-                (($parsed['query'] ?? false) ? '?' . $parsed['query'] : '');
+        $url .= ($parsed['path'] ?? '/') . (($parsed['query'] ?? false) ? '?' . $parsed['query'] : '');
 
         return $url;
+    }
+
+    /**
+     * @return string
+     */
+    public function getOriginalUrl(): string
+    {
+        return $this->originalUrl;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getData(): ?string
+    {
+        return $this->data;
+    }
+
+    /**
+     * @param string $data
+     *
+     * @return Site
+     */
+    public function setData(?string $data): Site
+    {
+        $this->data = $data;
+        return $this;
     }
 }
