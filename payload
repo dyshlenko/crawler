@@ -29,11 +29,35 @@ if ($paramsError) {
 }
 
 if ($paramsError || $url === null || $consoleArguments->getOption('h') !== null) {
-    if ($text = file_get_contents('help.txt')) {
-        echo $text;
-    } else {
-        echo "File \"help.txt\" not found.\n";
+    echo <<<HELPTEXT
+Load tester to evaluate the performance and load stability of the API.
+php payload [-h] [-t<maximum execution time>] [-d<directory>] [-m<HTTP method>] [-i<iterations>] [-c<number of competing requests>] [-H<HTTP header>] [-D<HTTP body>] <url>
+
+<url> - site URL
+-h - help (this text)
+-t - maximum script execution time, seconds (default 60)
+-d - directory for saving the report (default - current)
+-m - HTTP method for requests (GET, POST, PUT, DELETE, default GET)
+-H - HTTP header for requests. There may be several headers, see example.
+-i - number of iterations to average response time (default 100)
+-c - number of competing requests in each iteration (default 1)
+-D - string placed in the body of each POST or PUT request
+-F - full report with data for each iteration
+
+Example:
+php payload -t180 -d~/reports -H"Content-Type application/x-www-form-urlencoded" -H"Accept-Encoding gzip, deflate" -mPOST -i100 -c1 https://api.site.com/GraphQL -D'query=query(\$criterion: ServiceListInterface) {
+    allService(criterion: \$criterion) {
+        item,
+        texts {
+            locale,
+            text
+        }
     }
+}&variables={
+  "criterion": {}
+}'
+
+HELPTEXT;
     exit(1);
 }
 
@@ -44,8 +68,8 @@ $headers                  = (array) ($consoleArguments->getOption('H') ?? []);
 $data                     = $consoleArguments->getOption('D');
 $timeout                  = (int) ($consoleArguments->getOption('t') ?? DEFAULT_TIMEOUT);
 
-$start = microtime(true);
 set_time_limit($timeout);
+$start = microtime(true);
 
 $loader = ContentLoader::getInstance();
 $loader->setHeaders($headers);
@@ -54,6 +78,9 @@ $loader->setData($data);
 $handler = new PayloadHandler(new Site($url), $loader, $concurrentRequestsNumber, $iterations);
 
 $report = $handler->handle($url);
+if ($consoleArguments->getOption('F') === '') {
+    $report->withDetails();
+}
 echo $report->getContent();
 
 $fullFilename = ($consoleArguments->getOption('d') ?? '.') . '/' . $report->getDefaultFilename();

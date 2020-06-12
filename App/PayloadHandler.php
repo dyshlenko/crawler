@@ -17,6 +17,9 @@ class PayloadHandler
     /** @var array $repository */
     protected $loadTime;
 
+    /** @var array $details by iterations */
+    protected $details = [];
+
     /** @var Site $site */
     protected $site;
 
@@ -59,7 +62,7 @@ class PayloadHandler
 
         return new PayloadReport($this->loadTime, $this->contentLoader->getMethod(), $this->site->getOriginalUrl(),
                                  $this->iterations, $this->concurrentRequests, $this->contentLoader->getHeaders(),
-                                 $this->contentLoader->getData());
+                                 $this->contentLoader->getData(), $this->details);
     }
 
     private function payload(): void
@@ -68,9 +71,12 @@ class PayloadHandler
         $requestsList = array_fill(0, $this->concurrentRequests, $url);
 
         for ($i = 0; $i < $this->iterations; $i++) {
+            $details = [];
             $start = microtime(true);
-            $this->contentLoader->loadContent($requestsList);
+            $this->contentLoader->loadContent($requestsList, $details);
             $this->loadTime[$i] = microtime(true) - $start;
+            $this->details[$i]  = $details;
         }
+//        var_dump($this->details);
     }
 }

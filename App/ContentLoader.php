@@ -43,9 +43,11 @@ class ContentLoader implements ContentLoaderInterface
      *
      * @param array $urlArray
      *
+     * @param array $details
+     *
      * @return array content of URLs
      */
-    public function loadContent(array $urlArray): array
+    public function loadContent(array $urlArray, array &$details = []): array
     {
         $curlHandlers = [];
         $multiHandler = curl_multi_init();
@@ -76,6 +78,7 @@ class ContentLoader implements ContentLoaderInterface
 
         foreach ($curlHandlers as $url => $ch) {
             $curlHandlers[$url] = curl_multi_getcontent($ch);
+            $details[]          = curl_getinfo($ch);
             curl_close($ch);
         }
 
